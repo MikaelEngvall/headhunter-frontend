@@ -1,0 +1,53 @@
+// TODO - Should this file be removed?
+
+const postData = async (event) => {
+        event.preventDefault();
+
+        const url = 'http://localhost:8080/api/v1/users/login';
+
+        // Create a base64-encoded string of the username and password for basic authentication
+        const basicAuth = btoa(`${username}:${password}`);
+
+        try {
+            const response = await axios.post(
+                url,
+                {
+                    // Your request payload goes here
+                    username: username,
+                    password: password,
+                },
+                {
+                    headers: {
+                        Authorization: `Basic ${basicAuth}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            // Handle the response data
+            setResponse(response.data.data.userInfo.roles);
+
+            // Call the onLogin function to pass the user info to the parent component
+            onLogin(response.data.data);
+
+        } catch (error) {
+            // Handle errors
+            console.error('Error making POST request:', error);
+
+        }
+    };
+
+
+
+    
+  const handleLogin = (userInfo) => {
+    // Assuming userInfo includes user roles or authorities
+    setAuthenticated(true);
+    setIsAdmin(userInfo.userInfo.roles.toLowerCase().includes("admin")); // Update with actual admin role check
+    setUserInfo(userInfo); // Store user information
+    // setUserToken(userInfo.userInfo.token); // Store user token
+  };
+
+
+      setIsAdmin(userInfo.userInfo.roles.toLowerCase().includes("admin")); // Update with actual admin role check
+    setUserInfo(userInfo); // Store user information
