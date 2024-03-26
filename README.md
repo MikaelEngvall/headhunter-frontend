@@ -1,8 +1,8 @@
 # Headhunter
 
-This is the frontend part of the internship project Headhunter created by [Anders Lorén](https://github.com/andersloren) and [Mikael Engvall](https://github.com/mikaelengvall).
+This is the frontend part of the internship project Headhunter created by [Mikael Engvall](https://github.com/mikaelengvall) and [Anders Lorén](https://github.com/andersloren).
 
-The backend can be found [here](https://github.com/andersloren/headhunter).
+The backend can be found [here](https://github.com/MikaelEngvall/headhunter-backend-master).
 
 # Styled Components
 
