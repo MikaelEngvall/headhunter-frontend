@@ -1,6 +1,7 @@
 # Headhunter
+<picture>
 ![image](https://github.com/MikaelEngvall/headhunter-frontend-master/assets/137049638/6a0e2126-74b4-4737-a12b-28993cb14a38)
-
+</picture>
 This is the frontend part of the internship project Headhunter created by [Mikael Engvall](https://github.com/mikaelengvall) and [Anders Lorén](https://github.com/andersloren).
 
 The backend can be found [here](https://github.com/MikaelEngvall/headhunter-backend-master).
