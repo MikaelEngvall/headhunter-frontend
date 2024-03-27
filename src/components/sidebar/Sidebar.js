@@ -60,36 +60,45 @@ export default function Sidebar({ setIsAuthorized }) {
         </S_ExpandedIconBox>
         {roles.includes("admin") && (
           <>
-            <S_AdminSvg
-              $active={isActive === "4" ? "true" : "false"}
-              onClick={() => {
-                setIsActive("4");
-                setIsAccountVisible(false);
-                setIsAdminVisible(true);
-                setIsJobsVisible(false);
-              }}
-            />
+            <S_ExpandedIconBox>
+              <S_AdminSvg
+                $active={isActive === "4" ? "true" : "false"}
+                onClick={() => {
+                  setIsActive("4");
+                  setIsAccountVisible(false);
+                  setIsAdminVisible(true);
+                  setIsJobsVisible(false);
+                }}
+              />
+              {isExpanded ? "Admin" : ""}
+            </S_ExpandedIconBox>
+            <S_ExpandedIconBox>
+              <S_ListSvg
+                $active={isActive === "5" ? "true" : "false"}
+                onClick={() => {
+                  setIsActive("5");
+                  setIsAccountVisible(false);
+                  setIsAdminVisible(false);
+                  setIsJobsVisible(true);
+                }}
+              />
+              {isExpanded ? "My job ads" : ""}
+            </S_ExpandedIconBox>
+          </>
+        )}
+        <S_ExpandedIconBox>
+          {roles.includes("user") && !roles.includes("admin") && (
             <S_ListSvg
-              $active={isActive === "5" ? "true" : "false"}
               onClick={() => {
-                setIsActive("5");
                 setIsAccountVisible(false);
                 setIsAdminVisible(false);
                 setIsJobsVisible(true);
               }}
             />
-          </>
-        )}
-        {roles.includes("user") && !roles.includes("admin") && (
-          <S_ListSvg
-            onClick={() => {
-              setIsAccountVisible(false);
-              setIsAdminVisible(false);
-              setIsJobsVisible(true);
-            }}
-          />
-        )}
-        <S_LogoutSvg onClick={handleLogout} />
+          )}
+          <S_LogoutSvg onClick={handleLogout} />
+          {isExpanded ? "Logout" : ""}
+        </S_ExpandedIconBox>
       </S_SidebarBox>
       {isExpanded ? (
         <S_ExpandedSvg
