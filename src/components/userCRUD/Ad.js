@@ -1,143 +1,81 @@
-// Functions, libraries, etc.
 import { useEffect, useState } from "react";
 import { findAllAdsByJobId } from "./adFunctions/findAllAdsByJobId";
 import { deleteAd } from "./adFunctions/deleteAd";
-
-// Styled Components
-import { S_Main } from "../utils/styledGlobal";
-import {
-  S_FunctionalityButton,
-  S_FunctionalityButton_Box,
-  S_Header,
-  S_JobEdit_And_Ad_Box,
-  S_DeleteSvg,
-  S_PreviewBox,
-} from "./styledComponents/styledUserGlobal";
-import {
-  S_TopButtons_Box,
-  S_Buttons_Edit,
-  S_Iframe,
-} from "./styledComponents/styledAd";
-
-/**
- * The UI for showing and deleting ads.
- *
- * States:
- * - 'adList': Array of ads belonging to a certain Job object.
- * - 'htmlCode': HTML-code in string format that makes up a publishable ad.
- * - 'adId': The String identifier for the ad.
- * - 'activeAd': The ad that is currently being shown in the UI.
- * @param {number} jobId - The number identifier for the Job object that the adList belongs to.
- * @param {function} refreshAdTabs - When a new Job object is being clicked in the parent component, the ads related to that ad should be shown to the user.
- * @param {function} handleAdCRUDSuccess - When front-end caused changes in the Ad database happens, the clickable tabs in the UI that allows the user to inspect different ads should update to show the available ads.
- */
+import DeleteSvg from "../utils/icons/delete.svg?react";
 
 export default function Ad({ jobId, refreshAdTabs, handleAdCRUDSuccess }) {
-  // TODO - Change adList to adArray?
   const [adList, setAdList] = useState([]);
   const [htmlCode, setHtmlCode] = useState("");
   const [adId, setAdId] = useState(0);
   const [activeAd, setActiveAd] = useState(null);
 
-  /**
-   * When the length of the adList changes, the current loaded HTML-code should be emptied to prevent that HTML-code from a deleted Ad object is being shown.
-   *
-   */
-
   useEffect(() => {
-    if (!adList.length) {
-      setHtmlCode("");
-    }
-  }, [setHtmlCode, adList.length]);
-
-  /**
-   * When a new Job object is being selected in the parent component, that jobId needs to be handed down to this component so its related ads chan be loaded and shown to the user.
-   */
+    if (!adList.length) setHtmlCode("");
+  }, [adList.length]);
 
   useEffect(() => {
     findAllAdsByJobId(jobId, setAdList);
   }, [refreshAdTabs, jobId]);
 
-  /**
-   * TODO - Write a comment for this useEffect
-   */
-
   useEffect(() => {
     if (adList.length > 0) {
-      const lastElement = adList[adList.length - 1];
-      setAdId(lastElement.id);
+      const last = adList[adList.length - 1];
+      setAdId(last.id);
       setActiveAd(adList.length - 1);
-      setHtmlCode(lastElement.htmlCode);
+      setHtmlCode(last.htmlCode);
     }
   }, [adList]);
-
-  /**
-   * An ad can be be handed a string value in a the htmlcode field. That string is passed a backend test for truly being in HTML-format.
-   *
-   * In order to turn htmlCode into a viewable HTML-page, we need to convert it to a blob that can be read by the iframe-element.
-   */
 
   const blob = new Blob([htmlCode], { type: "text/html" });
   const url = URL.createObjectURL(blob);
 
-  /**
-   * If the user clicks the delete button, an window alert asks the user to continue the process or cancel it.
-   *
-   * @function
-   */
-
-  function handleDeleteAd(adId) {
-    if (window.confirm("Are you sure you want to delete this ad ?")) {
-      deleteAd(adId, handleAdCRUDSuccess);
-    } else {
-      console.log("User cancelled delete");
-    }
+  function handleDeleteAd(id) {
+    if (window.confirm("Delete this ad?")) deleteAd(id, handleAdCRUDSuccess);
   }
 
   return (
-    <S_Main>
-      <S_JobEdit_And_Ad_Box>
-        <S_Header>Ad</S_Header>
-
-        {
-          // Ad list tabs
-        }
-
-        <S_TopButtons_Box>
-          {adList.map((ad, index) => (
-            <S_Buttons_Edit
+    <div className="flex-1 flex flex-col bg-slate-950 overflow-hidden min-w-[400px]">
+      {/* Header + tabs */}
+      <div className="px-4 pt-4 pb-0 border-b border-slate-800">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-white text-sm">Ad Preview</h3>
+          <button
+            onClick={() => handleDeleteAd(adId)}
+            className="btn-icon" title="Delete ad"
+          >
+            <DeleteSvg />
+          </button>
+        </div>
+        {/* Tabs */}
+        <div className="flex gap-1 overflow-x-auto pb-px">
+          {adList.map((ad, i) => (
+            <button
               key={ad.id}
-              /**
-               * These buttons appears as tabs above the iframe element. By clicking these tabs, the user can switch between ads in the adsList. When a tab is being clicked it turns active and is being highlighted.
-               */
-              onClick={() => {
-                setHtmlCode(ad.htmlCode);
-                setActiveAd(index);
-                setAdId(ad.id);
-              }}
-              $active={activeAd === index ? "true" : "false"}
+              onClick={() => { setHtmlCode(ad.htmlCode); setActiveAd(i); setAdId(ad.id); }}
+              className={`px-3 py-1.5 text-xs font-medium rounded-t-md border-b-2 whitespace-nowrap transition-colors
+                ${activeAd === i
+                  ? "border-indigo-500 text-indigo-300 bg-indigo-500/10"
+                  : "border-transparent text-slate-500 hover:text-slate-300"
+                }`}
             >
-              Ad {index + 1}
-            </S_Buttons_Edit>
+              Version {i + 1}
+            </button>
           ))}
-        </S_TopButtons_Box>
+          {adList.length === 0 && (
+            <span className="text-slate-600 text-xs py-1.5">No ads generated yet</span>
+          )}
+        </div>
+      </div>
 
-        {
-          // Iframe for Ad
-        }
-
-        <S_PreviewBox>
-          <S_Iframe src={url} title={"Ad Content"}></S_Iframe>
-        </S_PreviewBox>
-        <S_FunctionalityButton_Box>
-          {/* <S_FunctionalityButton> */}
-          {
-            // Delete Ad button
-          }
-          <S_DeleteSvg onClick={() => handleDeleteAd(adId)} src="/google-icons/delete.svg" alt="delete" />
-          {/* </S_FunctionalityButton> */}
-        </S_FunctionalityButton_Box>
-      </S_JobEdit_And_Ad_Box>
-    </S_Main >
+      {/* iFrame */}
+      <div className="flex-1 p-4 overflow-hidden">
+        <iframe
+          src={url}
+          title="Ad Content"
+          className="w-full h-full rounded-lg border border-slate-700 bg-white"
+          style={{ minHeight: "500px" }}
+        />
+      </div>
+    </div>
   );
 }

@@ -1,134 +1,86 @@
-// Functions, libraries, etc.
 import { useEffect, useState } from "react";
 import { deleteUser } from "./adminFunctions/deleteUser";
 import { findAllUsers } from "./adminFunctions/findAllUsers";
-
-// Styled components
-import { S_Main, S_HeadingBox, S_Title } from "../utils/styledGlobal";
-import {
-  S_Userlist_Table,
-  S_UserList_Row,
-  S_Userlist_Data,
-  S_th,
-  S_Table_Button,
-  S_User_Box,
-} from "./styledComponents/styledAdmin";
 import AdminForm from "./AdminForm";
-
-/**
- * Admin component for managing users.
- *
- * On mount, displays full list of users and buttons for editing and deleting each user.
- *
- * States:
- * - 'userList':          An array of all user objects retrieved from the database.
- * - 'isBlur':            A boolean that controls the blurring effect of the background during editing.
- * - 'userEmail':         The email of the user being edited, used to prefill the AdminForm.
- * - 'refreshUserTable':  A boolean that triggers a refresh of the user list when toggled.
- */
 
 export default function Admin() {
   const [userList, setUserList] = useState([]);
-  const [isBlur, setIsBlur] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [userEmail, setUserEmail] = useState(null);
-  const [refreshUserTable, setRefreshUserTable] = useState(false);
+  const [refreshTable, setRefreshTable] = useState(false);
 
-  /**
-   * On mount, all users are being set to userList so they can be displayed.
-   */
+  useEffect(() => { findAllUsers(setUserList); }, []);
+  useEffect(() => { findAllUsers(setUserList); }, [refreshTable]);
 
-  useEffect(() => {
-    findAllUsers(setUserList);
-  }, []);
+  function handleUserCRUDSuccess() { setRefreshTable((r) => !r); }
 
-  /**
-   * When a user has been updated or deleted, all user are being set again so they can be displayed.
-   */
-
-  useEffect(() => {
-    findAllUsers(setUserList);
-  }, [refreshUserTable]);
-
-  function handleDelete(email) {
-    deleteUser(email);
-  }
-
-  /**
-   * If updating or deleting a user is successful, the handleUserCRUDSuccess is being toggled, which then triggers the useEffect aboce.
-   */
-
-  function handleUserCRUDSuccess() {
-    setRefreshUserTable((refresh) => !refresh);
+  async function handleDelete(email) {
+    if (window.confirm(`Delete user ${email}?`)) {
+      await deleteUser(email);
+      handleUserCRUDSuccess();
+    }
   }
 
   return (
-    <>
-      <S_Main>
-        <S_User_Box>
-          <S_HeadingBox>
-            <S_Title>Admin</S_Title>
-          </S_HeadingBox>
-          <S_Userlist_Table $blur={isBlur === true ? "true" : "false"}>
+    <div className="page-section">
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-8">
+          <h1 className="section-title text-2xl">User Management</h1>
+          <p className="text-slate-500 text-sm mt-1">Manage all registered users</p>
+        </div>
+
+        <div className={`card overflow-hidden transition-opacity ${isEditing ? "opacity-30 pointer-events-none" : ""}`}>
+          <table className="w-full text-sm">
             <thead>
-              <S_UserList_Row>
-                <S_th>Functionality</S_th>
-                <S_th>Email</S_th>
-                <S_th>Username</S_th>
-                <S_th>Roles</S_th>
-              </S_UserList_Row>
+              <tr className="border-b border-slate-700">
+                <th className="text-left px-4 py-3 text-slate-400 font-medium w-24">Actions</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">Email</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">Username</th>
+                <th className="text-left px-4 py-3 text-slate-400 font-medium">Roles</th>
+              </tr>
             </thead>
             <tbody>
-              {/**
-               * The array of all users are mapped here.
-               */}
-              {userList.map((user, index) => (
-                <S_UserList_Row key={index}>
-                  <S_Userlist_Data>
-                    {/**
-                     * Button for updating the user. Displays a child component and blurs the background.
-                     */}
-                    <S_Table_Button
-                      onClick={() => {
-                        if (!isBlur) {
-                          setIsBlur(true);
-                          setUserEmail(user.email);
-                        }
-                      }}
-                    >
-                      📝
-                    </S_Table_Button>
-                    {/**
-                   * Button for deleting the user.
-                   * 
-                   * TODO - Add functionality to this button so that it
-                    actually deletes the user!
-                   */}
-                    <S_Table_Button
-                      onClick={() => (isBlur ? "" : handleDelete(user.email))}
-                    >
-                      ❌
-                    </S_Table_Button>
-                  </S_Userlist_Data>
-                  <S_Userlist_Data>{user.email}</S_Userlist_Data>
-                  <S_Userlist_Data>{user.username}</S_Userlist_Data>
-                  <S_Userlist_Data>{user.roles}</S_Userlist_Data>
-                </S_UserList_Row>
+              {userList.map((user, i) => (
+                <tr key={i} className="border-b border-slate-800 hover:bg-slate-800/50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => { setIsEditing(true); setUserEmail(user.email); }}
+                        className="btn-icon" title="Edit"
+                      >✏️</button>
+                      <button
+                        onClick={() => handleDelete(user.email)}
+                        className="btn-icon" title="Delete"
+                      >🗑️</button>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-slate-300">{user.email}</td>
+                  <td className="px-4 py-3 text-slate-300">{user.username}</td>
+                  <td className="px-4 py-3">
+                    <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs">
+                      {user.roles}
+                    </span>
+                  </td>
+                </tr>
               ))}
             </tbody>
-          </S_Userlist_Table>
-          {/**
-           * If the update button is being pressed, a new component show up on top and blurs the background.
-           */}
-          {isBlur && (
+          </table>
+          {userList.length === 0 && (
+            <div className="text-center py-12 text-slate-600 text-sm">No users found</div>
+          )}
+        </div>
+
+        {/* Edit modal */}
+        {isEditing && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
             <AdminForm
               email={userEmail}
-              isBlur={isBlur}
-              setIsBlur={setIsBlur}
+              setIsEditing={setIsEditing}
               handleUserCRUDSuccess={handleUserCRUDSuccess}
             />
-          )}
-        </S_User_Box>
-      </S_Main>
-    </>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

@@ -1,291 +1,151 @@
-// Libraries, functions, etc...
 import { useEffect, useState } from "react";
-import { deleteJob } from "./jobFunctions/deleteJob.js";
 import { updateJob } from "./jobFunctions/updateJob.js";
 import { getJobById } from "./jobFunctions/getJobById.js";
 import { generateJobAd } from "./jobFunctions/generateJobAd.js";
-
-// Styled Components
-import { S_Main } from "../utils/styledGlobal.js";
-import {
-  S_JobEdit_And_Ad_Box,
-  S_Header,
-  S_PreviewBox,
-  S_FunctionalityButton_Box,
-  S_FunctionalityButton,
-  S_UpdateSvg,
-  S_GenerateSvg,
-} from "./styledComponents/styledUserGlobal.js";
-import {
-  S_TextArea,
-  S_Tooltip_FunctionalityButton,
-  S_Animation_Text,
-  S_Animation_Rotate,
-  S_Instruction_Input,
-  S_Decision_HtmlSvg,
-  S_Decision_PdfSvg,
-  S_Decision_DocxSvg,
-  S_HourglassBottom,
-} from "./styledComponents/styledJobEdit.js";
-
-/**
- * The UI for showing, updating and deleting jobs. Different decisions creates hidden instructions for the AI API. It is also here that ads are being generated.
- *
- * States:
- * - 'job': When a job is being fetched from the database, it is being set as a state.
- * - 'active': Being active means that the current Job object being handled is highlighted in the parent component UI.
- * - 'activeButton': Functionality buttons in this components shows tooltips when the mouse hovers above them. ActiveButton tells which button is being hovered over, and triggers a tooltip to show below it.
- * - 'isGenerating': Turns to true when the user clicks the generate button, causing all functionality buttons will blur during the communication with the backend and the AI API.
- *
- * @param {function} handleJobCRUDSuccess - Callback function that is invoked upon successful deletion to refresh the UI.
- * @param {number} jobId - The id of the Job object currently being selected by the user.
- * @param {function} setIsChange - When the user makes any changes in the job text area, this state sets to true. If the user clicks on a new job when isChange is true, a window confirm alert shows up asking the user if it wants to proceed before saving.
- * @param {function} handleAdCRUDSuccess - When the user makes any changes in the job text area, this state sets to true. If the user clicks on a new job when isChange is true, a window confirm alert shows up asking the user if it wants to proceed before saving.
- * @param {Function} handleAdCRUDSuccess - Callback function invoked to refresh the list of job ads in the UI upon successful ad generation.
- */
+import HtmlSvg from "../utils/icons/html.svg?react";
+import PdfSvg from "../utils/icons/pdf.svg?react";
+import DocxSvg from "../utils/icons/docx.svg?react";
+import HourglassBottomSvg from "../utils/icons/hourglass-bottom.svg?react";
+import UpdateSvg from "../utils/icons/update.svg?react";
+import GenerateSvg from "../utils/icons/generate.svg?react";
 
 export default function JobEdit({
-  handleJobCRUDSuccess,
-  jobId,
-  setIsChange,
-  setJobVisible,
-  handleAdCRUDSuccess,
+  handleJobCRUDSuccess, jobId, setIsChange, setJobVisible, handleAdCRUDSuccess,
 }) {
-  // States related to functionality
-  const [job, setJob] = useState({}); // TODO - Either use it or remove it.
+  const [job, setJob] = useState({});
   const [active, setActive] = useState(1);
-  const [activeButton, setActiveButton] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-
-  // States related to job
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [instruction, setInstruction] = useState("");
   const [documentType, setDocumentType] = useState("html");
-
-  // States related to instruction
   const [activeFormat, setActiveFormat] = useState("1");
-
-  /**
-   * If jobId changes, that new job is being fetched from the backend.
-   *
-   * Instruction is also set to 1, meaning that the file format that will be asked from the AI API is set to HTML. To change this, the user has to make an active decision on what file type it wants.
-   */
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     getJobById(jobId, setJob, setTitle, setDescription, setInstruction);
     setActiveFormat("1");
   }, [jobId]);
 
-  /**
-   * If activeFormat is being changes, the corresponding file format present in the documenTypeArr-array will be chosen.
-   *
-   * The -1 is due to the button decision that sets documenType starts at 1, but the documentTypeArr-array starts indexation at 0.
-   *
-   * Example: If the user choses the second decision button (PDF), the number 2 is stored in activeFormat. Subtract 1 from 2, and we get 1. Position 1 in documentTypArr is "pdf", which is exactly what the user wanted.
-   */
+  useEffect(() => {
+    setDocumentType(["html", "pdf", "docx"][activeFormat - 1]);
+  }, [activeFormat]);
 
   useEffect(() => {
-    const documentTypeArr = ["html", "pdf", "docx"];
-    setDocumentType(documentTypeArr[activeFormat - 1]);
-  }, [activeFormat, setDocumentType]);
-
-  /**
-   * When documentType changes, the instruction also has to change so that the user can get the file format it wants.
-   */
-
-  useEffect(() => {
-    setInstruction(
-      "Skapa en jobbannons i " +
-        documentType +
-        "-format med professionell och relevant CSS. " +
-        defaultInstructions
-    );
-    setDescription(defaultDescription);
+    setInstruction("Skapa en jobbannons i " + documentType + "-format med professionell CSS. " + DEFAULT_INSTRUCTIONS);
+    setDescription(DEFAULT_DESCRIPTION);
   }, [documentType]);
 
-  /**
-   * When clicking the button for generating an ad, a window confirm alert will show to prevent unwanted credit usage and time consuming events.
-   *
-   * If the user clicks OK, the HTTP request is being sent to the backend and isGenerating is set to true. This means that a loading animation will show on the screen and the user won't be able to interact with the functionality buttons until the response from the backend comes.
-   */
-
-  function handleGenerate() {
-    if (
-      window.confirm(
-        "Are you sure you want to generate a new ad? Remember, the generation will take a short moment and consume credits."
-      )
-    ) {
-      setIsGenerating(true);
-      generateJobAd(documentType, jobId, handleAdCRUDSuccess, setIsGenerating);
-    } else {
-      console.log("User cancelled generation");
-    }
-  }
-
-  /**
-   * At the end of the process of updating a job, the isChange state is being reset by handleIsChange.
-   *
-   * Since the job is already being saved when the job is updated, there is no need for a window confirm alert to show unless the user changes the text areas again.
-   */
-
   function handleUpdate() {
-    updateJob(
-      jobId,
-      handleJobCRUDSuccess,
-      title,
-      description,
-      instruction,
-      handleIsChange
-    );
+    updateJob(jobId, handleJobCRUDSuccess, title, description, instruction, () => {
+      setIsChange(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    });
   }
 
-  // TODO - Maybe just put setIsChange where it is supposed to happen instead of pointing to this function.
-  function handleIsChange() {
-    setIsChange(false);
-  }
-
-  // TODO - Maybe just put setActiveButton at the buttons instead of handling it here.
-  function handleActiveButton(buttonId) {
-    setActiveButton(buttonId);
-  }
+  const formats = [
+    { id: "1", label: "HTML", Icon: HtmlSvg },
+    { id: "2", label: "PDF",  Icon: PdfSvg },
+    { id: "3", label: "DOCX", Icon: DocxSvg },
+  ];
 
   return (
-    <S_Main>
-      <S_JobEdit_And_Ad_Box>
-        {
-          // Title input field
-        }
+    <div className="flex-1 flex flex-col overflow-y-auto bg-slate-950 border-r border-slate-800">
+      <div className="p-6 flex flex-col gap-5 max-w-2xl w-full">
 
-        <S_Header>Title</S_Header>
-        <S_Instruction_Input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        ></S_Instruction_Input>
-
-        {
-          // Format decision buttons
-        }
-
-        <S_Header>Format</S_Header>
-        <S_FunctionalityButton_Box>
-          <S_Decision_HtmlSvg
-            $active={activeFormat === "1" ? "true" : "false"}
-            src="/google-icons/html.svg"
-            alt="html"
-            onClick={() => setActiveFormat("1")}
+        {/* Title */}
+        <div>
+          <label className="label">Job Title</label>
+          <input
+            value={title}
+            onChange={(e) => { setTitle(e.target.value); setIsChange(true); }}
+            className="input-field text-base"
+            placeholder="e.g. Senior Frontend Developer"
           />
+        </div>
 
-          <S_Decision_PdfSvg
-            $active={activeFormat === "2" ? "true" : "false"}
-            src="/google-icons/pdf.svg"
-            alt="pdf"
-            onClick={() => setActiveFormat("2")}
-          />
+        {/* Format */}
+        <div>
+          <label className="label">Output Format</label>
+          <div className="flex gap-2 mt-1">
+            {formats.map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveFormat(id)}
+                className={`format-btn ${activeFormat === id ? "active" : ""}`}
+                title={label}
+              >
+                <Icon />
+              </button>
+            ))}
+          </div>
+        </div>
 
-          <S_Decision_DocxSvg
-            $active={activeFormat === "3" ? "true" : "false"}
-            src="/google-icons/docx.svg"
-            alt="docx"
-            onClick={() => setActiveFormat("3")}
-          />
-        </S_FunctionalityButton_Box>
-        {
-          // Description text area
-        }
-
-        <S_Header>Description</S_Header>
-        <S_PreviewBox>
-          <S_TextArea
-            value={active < 2 ? description : instruction}
+        {/* Description / Instruction tabs */}
+        <div>
+          <div className="flex gap-1 mb-3">
+            {["Description", "Instructions"].map((tab, i) => (
+              <button
+                key={tab}
+                onClick={() => setActive(i + 1)}
+                className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+                  active === i + 1
+                    ? "bg-indigo-600/20 text-indigo-300 border border-indigo-500/30"
+                    : "text-slate-500 hover:text-slate-300"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          <textarea
+            value={active === 1 ? description : instruction}
             onChange={(e) => {
-              active < 2
-                ? setDescription(e.target.value)
-                : setInstruction(e.target.value);
+              active === 1 ? setDescription(e.target.value) : setInstruction(e.target.value);
               setIsChange(true);
             }}
-          ></S_TextArea>
-        </S_PreviewBox>
-
-        {
-          // Functionality buttons
-        }
-
-        {
-          // Save Job button
-        }
-        <S_FunctionalityButton_Box>
-          {" "}
-          <S_UpdateSvg
-            src="/google-icons/update.svg"
-            alt="save job"
-            $blur={isGenerating === true ? "true" : "false"}
-            onClick={() => {
-              handleUpdate();
-            }}
+            className="code-area"
+            rows={12}
           />
-          {
-            // Generate Ad button
-          }
-          <S_GenerateSvg
-            src="/google-icons/generate.svg"
-            alt="generate ad"
-            $blur={isGenerating === true ? "true" : "false"}
-            onClick={() => {
-              setIsGenerating(true);
-              // handleUpdate();
-              // handleGenerate(jobId);
-            }}
-          />
-          {
-            // Delete Job button
-          }
-        </S_FunctionalityButton_Box>
+        </div>
 
-        {
-          // Generate loader animation
-        }
+        {/* Actions */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleUpdate}
+            disabled={isGenerating}
+            className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <UpdateSvg className="w-4 h-4 fill-white" />
+            {saved ? "Saved ✓" : "Save Job"}
+          </button>
+          <button
+            onClick={() => {
+              if (window.confirm("Generate an AI ad? This consumes credits.")) {
+                setIsGenerating(true);
+                generateJobAd(documentType, jobId, handleAdCRUDSuccess, setIsGenerating);
+              }
+            }}
+            disabled={isGenerating}
+            className="btn-secondary disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <GenerateSvg className="w-4 h-4 fill-slate-300" />
+            Generate Ad
+          </button>
+        </div>
+
+        {/* Generating loader */}
         {isGenerating && (
-          <>
-            <S_Animation_Rotate
-              $blur={isGenerating === true ? "true" : "false"}
-            >
-              <S_HourglassBottom />
-            </S_Animation_Rotate>
-            <S_Animation_Text>Generating ad...</S_Animation_Text>
-          </>
+          <div className="flex items-center gap-3 text-slate-400 text-sm">
+            <HourglassBottomSvg className="w-5 h-5 fill-indigo-400 animate-spin" />
+            Generating ad, please wait…
+          </div>
         )}
-
-        {/* {isGenerating && (
-          <>
-            <S_Animation_Rotate
-              $blur={isGenerating === true ? "true" : "false"}
-            >
-              🤖
-            </S_Animation_Rotate>
-            <S_Animation_Text>Generating ad...</S_Animation_Text>
-          </>
-        )} */}
-
-        {
-          // Instructions (for developing purposese)
-        }
-        {/*
-        <S_Header>Instructions</S_Header>
-        <S_PreviewBox>
-          <S_TextArea
-            value={instruction}
-            onChange={(e) => setInstruction(e.target.value)}
-          ></S_TextArea>
-        </S_PreviewBox>
-*/}
-      </S_JobEdit_And_Ad_Box>
-    </S_Main>
+      </div>
+    </div>
   );
 }
 
-const defaultInstructions =
-  "För att omarbeta en arbetsbeskrivning till en jobbannons, börja med att läsa igenom arbetsbeskrivningen noggrant för att förstå de huvudsakliga arbetsuppgifterna, nödvändiga kompetenser och kvalifikationer. Sedan, översätt denna information till en mer engagerande och tilltalande form som lockar potentiella kandidater. Det är viktigt att framhäva företagets kultur och de unika fördelarna med att arbeta där. Börja annonsen med en kort introduktion till företaget, följt av en översikt av jobbrollen. Använd en positiv och inkluderande ton, och undvik jargong. Gör klart vilka huvudsakliga ansvarsområden rollen innefattar och vilka färdigheter och erfarenheter som är önskvärda. Inkludera även information om eventuella förmåner eller möjligheter till personlig och professionell utveckling. Avsluta med hur man ansöker till tjänsten, inklusive viktiga datum och kontaktinformation. Kom ihåg att vara tydlig och koncis för att hålla potentiella kandidaters uppmärksamhet. En välformulerad jobbannons ska inte bara informera utan också inspirera och locka rätt talanger till att söka.";
-
-const defaultDescription =
-  "Företaget Sprinta utvecklare en applikation för AI-genererade jobbannonser. Frontend är skriven i React, och tillhörande libraries är React Router, Styled Components, Bootstrap och DOMPurify. Backend är skriven i Java och Spring Boot, Spring Security samt kommunikation med ett AI API används. Databasen sköts av MySQL. Applikationen styrs genom molntjänsten Azure. GIT och GitHub används som versionshanterare. Alla inblandade behöver kontinuerligt vara beredda på att sätta sig in i nya libraries och frameworks. Målet är att applikationen ska sjösättas inom 1 år. Applikationen växer snabbt och de nuvarande två utvecklarna får allt svårare att hinna med allt som behöver göras. Ytterligare en utvecklare behövs nu.";
+const DEFAULT_INSTRUCTIONS = "För att omarbeta en arbetsbeskrivning till en jobbannons, börja med att läsa igenom arbetsbeskrivningen noggrant för att förstå de huvudsakliga arbetsuppgifterna, nödvändiga kompetenser och kvalifikationer.";
+const DEFAULT_DESCRIPTION = "Företaget Sprinta utvecklare en applikation för AI-genererade jobbannonser. Frontend är skriven i React och Backend är skriven i Java och Spring Boot.";
